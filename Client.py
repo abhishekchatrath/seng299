@@ -2,6 +2,7 @@ import socket
 import time
 import threading
 import sys
+import utils
 
 #TO DO:
 # write a Client Parser that breaks down and assembles packets
@@ -17,11 +18,11 @@ class Client():
 	sock = None
 
 	def __init__(self):
-		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.server_host = socket.gethostname()
-		self.server_port = 9000
+		self.server_port = utils.socket.get('PORT', 9000)
+		self.buf_size = utils.BUFF_SIZE
 		self.server_address = (self.server_host,self.server_port)
-		self.buf_size = 1024
+		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	
 	def run(self):
 		self.sock.connect(self.server_address) 
