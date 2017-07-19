@@ -1,7 +1,8 @@
-import socket 
+import socket
 import time
 import threading
 import sys
+import os
 import utils
 
 #TO DO:
@@ -23,13 +24,18 @@ class Client():
 		self.buf_size = utils.BUFF_SIZE
 		self.server_address = (self.server_host,self.server_port)
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	
+
 	def run(self):
-		self.sock.connect(self.server_address) 
-		print("Successfully connected to chat server")
+		try:
+			self.sock.connect(self.server_address)
+			print("Successfully connected to chat server")
+		except:
+			print("Could not connect to server")
+			os._exit(1)
 		threading.Thread(target=self.send).start()
 		threading.Thread(target=self.recv).start()
-		
+
+
 	def send(self):
 		while True:
 			try:
@@ -40,16 +46,22 @@ class Client():
 			except:
 				self.sock.shutdown(socket.SHUT_RDWR)
 				self.sock.close()
+				os._exit(1)
 				return False
-				
+
 	def recv(self):
 		while True:
-			data = self.sock.recv(1024)
-			if data:
-				print("%s" %(data))
-			else:
+			try:
+				data = self.sock.recv(1024)
+				if data:
+					print("%s" %(data))
+				else:
+					raise Exception
+			except:
+				self.sock.shutdown(socket.SHUT_RDWR)
+				self.sock.close()
+				os._exit(1)
 				return False
-	
 
 if __name__ == "__main__":
     client = Client()
