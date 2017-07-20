@@ -2,6 +2,7 @@ import socket
 import threading
 import os
 import utils
+from Parser import Parser
 from ChatRoom import ChatRoom
 from ClientVariables import ClientVariables
 
@@ -38,44 +39,13 @@ class Server():
 			client, address = self.sock.accept()
 			if len(self.ClientDict) < utils.MAX_CLIENTS:
 				print('Connection Received: %s' % str(address))
+				clientVariables = ClientVariables("",address,"")
+				self.ClientDict[client] = clientVariables
 				threading.Thread(target=self.handle_connection, args=(client, address)).start()
 			else:
 				print("Max Capacity reached")
 				client.send("Sorry, the maximum capacity of %s users has already been reached. Please try again later." %(utils.MAX_CLIENTS))
 				client.close()
-
-	def set_alias(self, client, address):
-		try:
-			client.send("Please type your alias and press Enter:")
-			is_taken = True
-			while is_taken:
-				is_taken = False
-				alias = client.recv(self.buf_size)
-				for key in self.ClientDict:
-					if self.ClientDict[key].alias == alias:
-						client.send("That name has already been taken, please enter a new alias.")
-						is_taken = True
-			client.send("Your alias is %s" %(alias))
-			return alias
-		except:
-			self.close_client(client,address)
-
-	def add_client_to_room(self, client, address):
-		try:
-			str = "Please join one of the following chatrooms by typing its name and pressing Enter:"
-			for room in self.ChatroomDict:
-				str += '\n' + room
-			client.send(str + '\n')
-			while True:
-				room = client.recv(self.buf_size)
-				if room in self.ChatroomDict.keys():
-					self.ChatroomDict[room].add_client(client)
-					client.send("You are now in the room: %s" %(room))
-					return room
-				else:
-					client.send('%s is not a valid chatroom name. Please type a name from the list.' %(room))
-		except:
-			self.close_client(client,address)
 
 	def handle_server_admin(self):
 		#handle creating/deleting rooms, blocking/unblocking clients
@@ -147,29 +117,88 @@ class Server():
 		client.shutdown(socket.SHUT_RDWR)
 		client.close()
 
-	def send_to_room(self,client,message):
-		formatted_message = self.ClientDict[client].alias + ": " + message
+	def set_alias(self, client, parser):
+		try:
+			if utils.validate_str(parser.alias):
+				for key in self.ClientDict:
+					if self.ClientDict[key].alias == parser.alias:
+						packet = parser.assemble(utils.codes["alias_invalid"],parser.alias,"","","")
+						client.send(packet)
+						return
+				self.ClientDict[client].alias = parser.alias
+				packet = parser.assemble(utils.codes["alias_success"],self.ClientDict[client].alias,"","","")
+				client.send(packet)
+			else:
+				packet = parser.assemble(utils.codes["alias_invalid"],parser.alias,"","","")
+				client.send(packet)
+		except:
+			self.close_client(client,self.ClientDict[client].address)
+
+	def add_client_to_room(self, client, parser):
+		try:
+			if parser.room in self.ChatroomDict.keys():
+				self.ChatroomDict[parser.room].add_client(client)
+				self.ClientDict[client].chatroom = parser.room
+				packet = parser.assemble(utils.codes["room_success"],self.ClientDict[client].alias,self.ClientDict[client].chatroom,"","")
+				client.send(packet)
+			else:
+				packet = parser.assemble(utils.codes["room_invalid"],self.ClientDict[client].alias,parser.room,"","")
+				client.send(packet)
+		except:
+			self.close_client(client,self.ClientDict[client].address)
+
+	def send_room_list(self,client,parser): #roomlist is sent as space-separated string
+		try:
+			room_list = ""
+			for room in self.ChatroomDict.keys():
+				room_list += room + " "
+			packet = parser.assemble(utils.codes["recv_roomlist"],self.ClientDict[client].alias,"","",room_list)
+			client.send(packet)
+		except:
+			self.close_client(client,self.ClientDict[client].address)
+
+	def send_to_room(self,client,parser):
+		formatted_message = parser.date + " " + self.ClientDict[client].alias + ": " + parser.body
+		packet = parser.assemble(utils.codes["recv_msg"],self.ClientDict[client].alias,self.ClientDict[client].chatroom,"",formatted_message)
 		room = self.ClientDict[client].chatroom
-		for item in self.ChatroomDict[room].clientList:
+		for person in self.ChatroomDict[room].clientList:
 			try:
-				item.send(formatted_message)
+				person.send(packet)
 			except:
-				self.close_client(item,self.ClientDict[item].address)
+				continue
+				#self.close_client(item,self.ClientDict[item].address
+
+	def parse_input(self,client,packet):
+		parser = Parser()
+		parser.breakdown(packet)
+		if parser.code == utils.codes["send_msg"] and parser.alias and parser.room: #sendmessage
+			self.send_to_room(client,parser)
+		elif parser.code == utils.codes["set_alias"]: #setalias
+			self.set_alias(client,parser)
+		elif parser.code == utils.codes["set_room"] and parser.alias: #setroom
+			self.add_client_to_room(client,parser)
+		elif parser.code == utils.codes["get_roomlist"] and parser.alias:
+			self.send_room_list(client,parser)
+		else:
+			print("Invalid packet")
+			return
+			#invalid packet: do nothing
 
 	def handle_connection(self, client, address):
-		clientVariables = ClientVariables(self.set_alias(client,address), address, self.add_client_to_room(client,address))
-		self.ClientDict[client] = clientVariables
+		#clientVariables = ClientVariables(self.set_alias(client,address), address, self.add_client_to_room(client,address))
+		#self.ClientDict[client] = clientVariables
 		try:
-			client.send("Type your message and press Enter to send. Type exit() to quit.")
 			client.settimeout(None)
 			while True:
-				data = client.recv(self.buf_size)
-				if data:
-					print("%s:%s >> %s" % (address[0],address[1],data))
-					self.send_to_room(client, data)
+				packet = client.recv(self.buf_size)
+				if packet:
+					print("%s:%s >> %s" % (address[0],address[1],packet))
+					self.parse_input(client,packet)
+					#self.send_to_room(client, packet)
 				else:
-					raise error('Client disconnected')
-		except:
+					raise Exception #error('Client disconnected')
+		except Exception as e:
+			print(e.message)
 			self.close_client(client,address)
 			return False
 
