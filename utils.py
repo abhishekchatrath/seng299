@@ -6,6 +6,8 @@ socket = {
 BUFF_SIZE = 1024
 MAX_CLIENTS = 20
 MAX_ROOMS = 10
+MIN_ROOMS = 1
+GEN_ROOM = 'General'
 
 commands = [
 	'create_room',
