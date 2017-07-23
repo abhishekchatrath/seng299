@@ -23,7 +23,7 @@ class Server():
 
 	def __init__(self):
 		self.host = utils.socket.get('HOST', '')
-		self.host = "127.0.0.1"
+		self.host = ""
 		self.port = utils.socket.get('PORT', 9000)
 		self.buf_size = utils.BUFF_SIZE
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -153,7 +153,9 @@ class Server():
 
 	def send_room_list(self,client,parser): #roomlist is sent as space-separated string
 		self.ClientDict[client].chatroom = None
+		print "Parser.room: " + parser.room
 		if parser.room in self.ChatroomDict.keys():
+			print "Removing: " + parser.alias
 			self.ChatroomDict[parser.room].remove_client(client)
 		try:
 			room_list = ""
@@ -168,7 +170,7 @@ class Server():
 		formatted_message = parser.date + " " + self.ClientDict[client].alias + ": " + parser.body
 		packet = parser.assemble(utils.codes["recv_msg"],self.ClientDict[client].alias,self.ClientDict[client].chatroom,"",formatted_message)
 		room = self.ClientDict[client].chatroom
-		print "Length is" + str(len(self.ClientDict))
+		print "Length is" + str(len(self.ChatroomDict[room].clientList))
 		for person in self.ChatroomDict[room].clientList:
 			try:
 				person.send(packet)

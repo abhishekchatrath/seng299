@@ -9,7 +9,7 @@ class ChatRoom():
 	def __init__(self, name):
 		self.room_name = name
 		self.clientList = []
-		self.db = DBWriter() #todo check parameters after making DBWriter class
+		#self.db = DBWriter() #todo check parameters after making DBWriter class
 
 	def set_room_name(self, name):
 		self.room_name = name #todo check if name is valid

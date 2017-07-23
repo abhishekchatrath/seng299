@@ -38,6 +38,7 @@ class App(Thread):
     alias = None
     room = None
     flag = False
+    in_room = False
     client = socket()
     IP = raw_input("IP Address: " )
     if not IP:
@@ -75,7 +76,7 @@ class App(Thread):
         elif code == utils.codes["set_room"]:
             packet = parser.assemble(utils.codes["set_room"],self.alias,msg,"","")
         elif code == utils.codes["get_roomlist"]:
-            packet = parser.assemble(utils.codes["get_roomlist"],self.alias,"","","")
+            packet = parser.assemble(utils.codes["get_roomlist"],self.alias,self.room,"","")
         print("Sending packet %s" %(packet))
         return packet
 
@@ -114,7 +115,7 @@ class App(Thread):
             if not inputQueue.empty():
                 aliasCheck = str(inputQueue.get())
                 #This code is ruffff
-                if aliasCheck.startswith("7"):
+                if aliasCheck.startswith(utils.codes["alias_success"]):
                     roomList = self.breakdown_packet(aliasCheck)
                     self.clearWindow()
                     self.changeRoom(roomList)
@@ -150,9 +151,9 @@ class App(Thread):
             time.sleep(1)
             if not inputQueue.empty():
                 roomCheck = str(inputQueue.get())
-                #print roomCheck
-                if roomCheck.startswith("8"):
+                if roomCheck.startswith(utils.codes["room_success"]):
                     self.room = chosenRoom
+                    self.in_room = True
                     self.inRoom(chosenRoom)
 
             else:
@@ -187,10 +188,21 @@ class App(Thread):
 
 
         def changingRoom():
-            self.clearWindow()
-            self.changeRoom()
+
+            packet = self.assemble_packet("", utils.codes["get_roomlist"])
+            self.client.send(packet)
+            time.sleep(1)
+            if not inputQueue.empty():
+                roomCheck = str(inputQueue.get())
+                if roomCheck.startswith(utils.codes["recv_roomlist"]):
+                    in_room = False
+                    roomList = self.breakdown_packet(roomCheck)
+                    self.clearWindow()
+                    self.changeRoom(roomList)
+
 
         root.title("TrashTalk - " + room)
+
         self.messageHistory = ScrolledText(root, undo = True)
         self.messageHistory.bind("<Key>", lambda e: "break")
         self.messageHistory.pack(anchor=W)
@@ -205,11 +217,12 @@ class App(Thread):
         def update_chat():
             if not buildQueue.empty():
                 MYINFO = buildQueue.get()
-                msg = self.breakdown_packet(MYINFO)
-                endOfBox=self.messageHistory.vbar.get()
-                self.messageHistory.insert(END, "\n" + msg)
-                if endOfBox[1]==1.0:
-                    endOfBox=self.messageHistory.see("end")
+                if self.in_room:
+                    msg = self.breakdown_packet(MYINFO)
+                    endOfBox=self.messageHistory.vbar.get()
+                    self.messageHistory.insert(END, "\n" + msg)
+                    if endOfBox[1]==1.0:
+                        endOfBox=self.messageHistory.see("end")
             root.after(500, update_chat)
 
         root.after(500, update_chat)
