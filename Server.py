@@ -18,8 +18,8 @@ class Server():
 	port = None
 	sock = None
 	buf_size = None
-	ClientDict = {}
-	ChatroomDict = {}
+	ClientDict = {} #keys are client sockets, values are ClientVariables
+	ChatroomDict = {} #keys are chatroom name, values are Chatroom objects
 
 	def __init__(self):
 		self.host = utils.socket.get('HOST', '')
@@ -61,11 +61,11 @@ class Server():
 					if command == utils.commands[0]:#create_room
 						self.create_room()
 					# elif command == utils.commands[1]:#name_room
-						
+
 					elif command == utils.commands[2]:#del_room
 						self.delete_room()
 					# elif command == utils.commands[2]:#toggle_block
-						
+
 				else:
 					print("Invalid command. Please try again.")
 			except Exception as e:
@@ -88,7 +88,7 @@ class Server():
 				os._exit(1)
 		else:
 			print("Sorry, the maximum room limit of %s has already been reached." % (utils.MAX_ROOMS))
-	
+
 	def delete_room(self):
 		if len(self.ChatroomDict) > utils.MIN_ROOMS:
 			try:
@@ -107,7 +107,7 @@ class Server():
 				os._exit(1)
 		else:
 			print("Sorry, the minimum room limit has already been reached.")
-	
+
 	def close_client(self,client,address):
 		print("Closed Client %s:%s" %(address[0],address[1]))
 		if client in self.ClientDict.keys():
@@ -152,6 +152,9 @@ class Server():
 			self.close_client(client,self.ClientDict[client].address)
 
 	def send_room_list(self,client,parser): #roomlist is sent as space-separated string
+		self.ClientDict[client].chatroom = None
+		if parser.room in self.ChatroomDict.keys():
+			self.ChatroomDict[parser.room].remove_client(client)
 		try:
 			room_list = ""
 			for room in self.ChatroomDict.keys():
@@ -185,23 +188,19 @@ class Server():
 		elif parser.code == utils.codes["get_roomlist"] and parser.alias:
 			self.send_room_list(client,parser)
 		else:
-			print("Invalid packet")
+			print("Recieved Invalid packet")
 			return
-			#invalid packet: do nothing
 
 	def handle_connection(self, client, address):
-		#clientVariables = ClientVariables(self.set_alias(client,address), address, self.add_client_to_room(client,address))
-		#self.ClientDict[client] = clientVariables
 		try:
 			client.settimeout(None)
 			while True:
 				packet = client.recv(self.buf_size)
 				if packet:
-					print("%s:%s >> %s" % (address[0],address[1],packet))
+					print("Recieved packet: %s:%s >> %s" % (address[0],address[1],packet))
 					self.parse_input(client,packet)
-					#self.send_to_room(client, packet)
 				else:
-					raise Exception #error('Client disconnected')
+					raise Exception
 		except Exception as e:
 			print(e.message)
 			self.close_client(client,address)

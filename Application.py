@@ -18,36 +18,17 @@ buildQueue = Queue.Queue()
 
 class Recieve():
     def __init__(self, client):
-        #self.messageHistory = messageHistory
         while True:
             try:
-                text = client.recv(1024)
+                text = client.recv(utils.BUFF_SIZE)
+                print "Recieved packet: " + text
                 if not text:
                     break
                 else:
-                    if text.startswith("8"):
-                        prs = Parser()
-                        self.text = text
-                        #self.sframe = Frame(frame)
-                        #self.sframe.pack(anchor='w')
-                        #print text
-                        prs.breakdown(text)
-                        inputQueue.put(self.text)
-                        time.sleep(2)
-                        #self.messageHistory = ScrolledText(root, undo = True)
-                        #self.messageHistory.bind("<Key>", lambda e: "break")
-                        #self.messageHistory.pack()
-                        #self.messageHistory.insert(END,"Welcome " + prs.alias +" to the " + prs.room + " chat room!")
-                        #inputQueue.put(self.text)
-                    if text.startswith("5"):
-                        print text
+                    if text.startswith(utils.codes["recv_msg"]):
                         buildQueue.put(text)
-                        #self.messageHistory.insert(END, text)
-                    #print text
                     else:
-                        #print text
                         inputQueue.put(text)
-                    #print inputQueue.get()
             except:
                 break
 
@@ -71,16 +52,9 @@ class App(Thread):
         Thread.__init__(self)
         frame = Frame(master)
         frame.pack()
-        #self.messageHistory = ScrolledText(frame, undo = True)
-        #self.messageHistory.bind("<Key>", lambda e: "break")
-        #self.messageHistory.pack()
-        #self.sframe = Frame(frame)
-        #self.sframe.pack(anchor='w')
-
         self.setAlias()
 
     def run(self):
-
         Recieve(self.client)
 
     def clearWindow(self):
@@ -131,6 +105,9 @@ class App(Thread):
         def setRoom():
             aliasCheck = None
             self.alias = self.aliasInfo.get().translate(None, '\\')
+            self.alias = self.alias.translate(None, ' ')
+            if len(self.alias) > 20:
+                self.alias = self.alias[:19]
             packet = self.assemble_packet(self.alias, utils.codes["set_alias"])
             self.client.send(packet)
             time.sleep(1)
@@ -203,13 +180,11 @@ class App(Thread):
             message = self.entryBox.get()
             if message:
                 self.entryBox.delete(0, 'end')
+                message = message.translate(None, '\\')
                 packet = self.assemble_packet(message, utils.codes["send_msg"])
                 self.client.send(packet)
 
-                '''endOfBox=self.messageHistory.vbar.get()
-                self.messageHistory.insert(END, "\n" + message)
-                if endOfBox[1]==1.0:
-                    endOfBox=self.messageHistory.see("end")'''
+
 
         def changingRoom():
             self.clearWindow()
@@ -221,21 +196,23 @@ class App(Thread):
         self.messageHistory.pack(anchor=W)
         self.messageHistory.insert(END,"Welcome " + self.alias +" to the " + room + " chat room!")
         self.entryBox = Entry(root, width = 85)
-        self.entryBox.place(x = 0, y = 392, anchor=W)
+        self.entryBox.place(x = 0, y = 400, anchor=W)
         self.sendButton = Button(root, height=2, width=19, text = "Send Message", command = newMessage)
         self.sendButton.place(x = 518, y = 388, anchor = NW)
         self.sendButton = Button(root, height=2, width=19, text = "Change Room", command = changingRoom)
         self.sendButton.place(x = 725, y = 300, anchor = NW)
 
-
-        def polling():
+        def update_chat():
             if not buildQueue.empty():
                 MYINFO = buildQueue.get()
-                
-                self.messageHistory.insert(END, "\n" + MYINFO)
-            root.after(500, polling)
+                msg = self.breakdown_packet(MYINFO)
+                endOfBox=self.messageHistory.vbar.get()
+                self.messageHistory.insert(END, "\n" + msg)
+                if endOfBox[1]==1.0:
+                    endOfBox=self.messageHistory.see("end")
+            root.after(500, update_chat)
 
-        root.after(500, polling)
+        root.after(500, update_chat)
 
 
 
