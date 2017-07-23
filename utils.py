@@ -21,7 +21,9 @@ MAX_CLIENTS = 20
 MAX_ROOMS = 10
 MIN_ROOMS = 1
 GEN_ROOM = 'General'
+DATE_FORMAT = "%Y-%m-%d %H:%M"
 DATE_FORMAT = "%H:%M"
+MAX_ROOM_MESSAGES = 10
 
 commands = [
 	'create_room',
@@ -30,7 +32,6 @@ commands = [
 	'toggle_block'
 ]
 
-#todo check for special characters too
 def validate_str(str):
 	return isinstance(str, basestring) and (len(str) <= 20) and (not '\\' in str) and (not ' ' in str)
 
