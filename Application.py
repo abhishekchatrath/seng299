@@ -119,22 +119,25 @@ class App(Thread):
                     roomList = self.breakdown_packet(aliasCheck)
                     self.clearWindow()
                     self.changeRoom(roomList)
+                else:
+                    self.flag = True
+                    self.clearWindow()
+                    self.setAlias()
             else:
                 self.flag = True
                 self.clearWindow()
                 self.setAlias()
 
-
-        self.intro = Label(root, text = "Everyone Else Is Trash", width=600, font=8000, fg="red", pady = 100)
+        self.intro = Label(root, text = "Welcome to TrashTalk", width=600, font=8000, fg="red", pady = 100)
         self.intro.pack(anchor = CENTER)
         self.aliasLabel = Label(root, text = "Set Your Alias:", pady = 10)
         self.aliasLabel.pack(anchor = CENTER)
         self.aliasInfo = Entry(root, width = 40)
         self.aliasInfo.pack(anchor = CENTER)
         self.spacing = Label(root, text = "", pady = 70)
-        if self.flag == True:
-            self.spacing.config(text = "Alias name is already taken")
-            self.flag = False
+        if self.flag:
+            print "FLAGGED"
+            self.spacing.config(text = "Alias is already taken", fg = "red")
         self.spacing.pack(anchor = CENTER)
         self.login = Button(root, height=2, width=10, text = "Pick A Room", command = setRoom)
         self.login.pack(anchor = CENTER)
@@ -155,10 +158,8 @@ class App(Thread):
                     self.room = chosenRoom
                     self.in_room = True
                     self.inRoom(chosenRoom)
-
             else:
                 self.changeRoom(roomList)
-
 
         root.title("TrashTalk")
         rooms = roomList.split()
@@ -170,7 +171,6 @@ class App(Thread):
             self.b = Radiobutton(root, text = room, variable = self.v, value = room)
             self.b.pack(anchor=CENTER)
         self.b.deselect()
-
         self.login = Button(root, height=2, width=20, text = "Enter Chosen Room", command = enterRoom)
         self.login.place(relx=0.5, y=400, anchor = CENTER)
 
@@ -182,13 +182,12 @@ class App(Thread):
             if message:
                 self.entryBox.delete(0, 'end')
                 message = message.translate(None, '\\')
+                if len(message) > 900:
+                    message = message[:899]
                 packet = self.assemble_packet(message, utils.codes["send_msg"])
                 self.client.send(packet)
 
-
-
         def changingRoom():
-
             packet = self.assemble_packet("", utils.codes["get_roomlist"])
             self.client.send(packet)
             time.sleep(1)
@@ -200,9 +199,11 @@ class App(Thread):
                     self.clearWindow()
                     self.changeRoom(roomList)
 
+        def exitProgram():
+            self.client.close()
+            os._exit(1)
 
         root.title("TrashTalk - " + room)
-
         self.messageHistory = ScrolledText(root, undo = True)
         self.messageHistory.bind("<Key>", lambda e: "break")
         self.messageHistory.pack(anchor=W)
@@ -211,8 +212,10 @@ class App(Thread):
         self.entryBox.place(x = 0, y = 400, anchor=W)
         self.sendButton = Button(root, height=2, width=19, text = "Send Message", command = newMessage)
         self.sendButton.place(x = 518, y = 388, anchor = NW)
-        self.sendButton = Button(root, height=2, width=19, text = "Change Room", command = changingRoom)
+        self.sendButton = Button(root, height=4, width=25, text = "Change Room", command = changingRoom)
         self.sendButton.place(x = 725, y = 300, anchor = NW)
+        self.sendButton = Button(root, height=4, width=25, text = "Quit", command = exitProgram)
+        self.sendButton.place(x = 725, y = 400, anchor = NW)
 
         def update_chat():
             if not buildQueue.empty():
@@ -223,9 +226,8 @@ class App(Thread):
                     self.messageHistory.insert(END, "\n" + msg)
                     if endOfBox[1]==1.0:
                         endOfBox=self.messageHistory.see("end")
-            root.after(500, update_chat)
-
-        root.after(500, update_chat)
+            root.after(100, update_chat)
+        root.after(100, update_chat)
 
 
 
