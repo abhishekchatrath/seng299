@@ -128,7 +128,6 @@ class App(Thread):
                 self.clearWindow()
                 self.setAlias()
 
-
         self.intro = Label(root, text = "Welcome to TrashTalk", width=600, font=8000, fg="red", pady = 100)
         self.intro.pack(anchor = CENTER)
         self.aliasLabel = Label(root, text = "Set Your Alias:", pady = 10)
@@ -159,10 +158,8 @@ class App(Thread):
                     self.room = chosenRoom
                     self.in_room = True
                     self.inRoom(chosenRoom)
-
             else:
                 self.changeRoom(roomList)
-
 
         root.title("TrashTalk")
         rooms = roomList.split()
@@ -174,7 +171,6 @@ class App(Thread):
             self.b = Radiobutton(root, text = room, variable = self.v, value = room)
             self.b.pack(anchor=CENTER)
         self.b.deselect()
-
         self.login = Button(root, height=2, width=20, text = "Enter Chosen Room", command = enterRoom)
         self.login.place(relx=0.5, y=400, anchor = CENTER)
 
@@ -191,10 +187,7 @@ class App(Thread):
                 packet = self.assemble_packet(message, utils.codes["send_msg"])
                 self.client.send(packet)
 
-
-
         def changingRoom():
-
             packet = self.assemble_packet("", utils.codes["get_roomlist"])
             self.client.send(packet)
             time.sleep(1)
@@ -207,11 +200,8 @@ class App(Thread):
                     self.changeRoom(roomList)
 
         def exitProgram():
-            #self.client.shutdown(socket.SHUT_RDWR)
             self.client.close()
             os._exit(1)
-
-
 
         root.title("TrashTalk - " + room)
         self.messageHistory = ScrolledText(root, undo = True)
@@ -237,7 +227,6 @@ class App(Thread):
                     if endOfBox[1]==1.0:
                         endOfBox=self.messageHistory.see("end")
             root.after(100, update_chat)
-
         root.after(100, update_chat)
 
 
