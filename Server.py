@@ -29,7 +29,7 @@ class Server():
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		self.sock.bind((self.host, self.port))
-		self.ChatroomDict['General'] = ChatRoom('General')
+		self.ChatroomDict['General'] = ChatRoom(utils.GEN_ROOM)
 
 	def run(self):
 		print('Starting Server.')
@@ -61,14 +61,15 @@ class Server():
 					if command == utils.commands[0]:#create_room
 						self.create_room()
 					# elif command == utils.commands[1]:#name_room
-					# 	#todo after dinner
+						
 					elif command == utils.commands[2]:#del_room
 						self.delete_room()
 					# elif command == utils.commands[2]:#toggle_block
-					# 	#todo after dinner
+						
 				else:
 					print("Invalid command. Please try again.")
-			except:
+			except Exception as e:
+				print(str(e))
 				self.sock.close()
 				os._exit(1)
 
@@ -87,11 +88,26 @@ class Server():
 				os._exit(1)
 		else:
 			print("Sorry, the maximum room limit of %s has already been reached." % (utils.MAX_ROOMS))
-
+	
 	def delete_room(self):
-		print("Type the name of the room you want to delete")
-		#to do: add actual functionality
-
+		if len(self.ChatroomDict) > utils.MIN_ROOMS:
+			try:
+				print("Type the name of the room you want to delete:")
+				room_name = raw_input()
+				if utils.validate_str(room_name) and (room_name in self.ChatroomDict) and (room_name != utils.GEN_ROOM):
+					client_list = self.ChatroomDict[room_name].clientList
+					print('Closing all clients in room %s' % (room_name))
+					for client in client_list:
+						self.close_client(client, self.ClientDict[client].address)
+					del self.ChatroomDict[room_name]
+					print('The room %s as been deleted.' % (room_name))
+			except Exception as e:#for clean exit when user types CTRL+C
+				print(str(e))
+				self.sock.close()
+				os._exit(1)
+		else:
+			print("Sorry, the minimum room limit has already been reached.")
+	
 	def close_client(self,client,address):
 		print("Closed Client %s:%s" %(address[0],address[1]))
 		if client in self.ClientDict.keys():
@@ -99,6 +115,7 @@ class Server():
 				room = self.ClientDict[client].chatroom
 				self.ChatroomDict[room].remove_client(client)
 			del self.ClientDict[client]
+		client.shutdown(socket.SHUT_RDWR)
 		client.close()
 
 	def set_alias(self, client, parser):
