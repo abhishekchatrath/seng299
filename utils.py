@@ -22,6 +22,7 @@ MAX_ROOMS = 10
 MIN_ROOMS = 1
 GEN_ROOM = 'General'
 DATE_FORMAT = "%Y-%m-%d %H:%M"
+MAX_ROOM_MESSAGES = 10
 
 commands = [
 	'create_room',
