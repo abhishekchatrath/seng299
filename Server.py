@@ -18,8 +18,8 @@ class Server():
 	port = None
 	sock = None
 	buf_size = None
-	ClientDict = {}
-	ChatroomDict = {}
+	ClientDict = {} #keys are client sockets, values are ClientVariables
+	ChatroomDict = {} #keys are chatroom name, values are Chatroom objects
 
 	def __init__(self):
 		self.host = utils.socket.get('HOST', '')
@@ -152,6 +152,9 @@ class Server():
 			self.close_client(client,self.ClientDict[client].address)
 
 	def send_room_list(self,client,parser): #roomlist is sent as space-separated string
+		self.ClientDict[client].chatroom = None
+		if parser.room in self.ChatroomDict.keys():
+			self.ChatroomDict[parser.room].remove_client(client)
 		try:
 			room_list = ""
 			for room in self.ChatroomDict.keys():
