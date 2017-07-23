@@ -20,7 +20,8 @@ class Server():
 	buf_size = None
 	ClientDict = {} #keys are client sockets, values are ClientVariables
 	ChatroomDict = {} #keys are chatroom name, values are Chatroom objects
-
+	BlockedList = []
+	
 	def __init__(self):
 		self.host = utils.socket.get('HOST', '')
 		self.host = ""
@@ -30,7 +31,7 @@ class Server():
 		self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		self.sock.bind((self.host, self.port))
 		self.ChatroomDict['General'] = ChatRoom(utils.GEN_ROOM)
-
+		
 	def run(self):
 		print('Starting Server.')
 		self.sock.listen(5)
@@ -38,6 +39,8 @@ class Server():
 		threading.Thread(target=self.handle_server_admin).start()
 		while True:
 			client, address = self.sock.accept()
+			if address[0] in self.BlockedList:
+				continue;
 			if len(self.ClientDict) < utils.MAX_CLIENTS:
 				print('Connection Received: %s' % str(address))
 				clientVariables = ClientVariables("",address,"")
@@ -60,12 +63,28 @@ class Server():
 				if utils.validate_cmd(command):
 					if command == utils.commands[0]:#create_room
 						self.create_room()
-					# elif command == utils.commands[1]:#name_room
-
+					elif command == utils.commands[1]:#rename_room
+						"""need to tell client too that chatroom name has been changed"""
+						print('Not implemented yet.')
 					elif command == utils.commands[2]:#del_room
 						self.delete_room()
-					# elif command == utils.commands[2]:#toggle_block
-
+					elif command == utils.commands[3]:#block
+						str = ""
+						for clientVars in self.ClientDict.values():
+							str += clientVars.__str__() + "\n"
+						print('Please type the IP of the client you wish to block and press Enter.\n%s\n' % (str))
+						ip = raw_input()
+						self.BlockedList.append(ip)
+						for client in self.ClientDict:
+							if (self.ClientDict[client].address[0]) == ip:
+								self.close_client(client, self.ClientDict[client].address)
+					elif command == utils.command[4]:#unblock
+						str = ""
+						for blockedIP in self.BlockedList:
+							str = blockedIP + "\n"
+						print('Please type the IP of the client you wish to unblock and press Enter.\n%s\n' % (str))
+						ip = raw_input()
+						self.BlockedList.remove(ip)
 				else:
 					print("Invalid command. Please try again.")
 			except Exception as e:
