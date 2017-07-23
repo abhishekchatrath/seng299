@@ -23,6 +23,7 @@ class Server():
 
 	def __init__(self):
 		self.host = utils.socket.get('HOST', '')
+		self.host = "127.0.0.1"
 		self.port = utils.socket.get('PORT', 9000)
 		self.buf_size = utils.BUFF_SIZE
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -108,8 +109,11 @@ class Server():
 						packet = parser.assemble(utils.codes["alias_invalid"],parser.alias,"","","")
 						client.send(packet)
 						return
+				room_list = ""
+				for room in self.ChatroomDict.keys():
+					room_list += room + " "
 				self.ClientDict[client].alias = parser.alias
-				packet = parser.assemble(utils.codes["alias_success"],self.ClientDict[client].alias,"","","")
+				packet = parser.assemble(utils.codes["alias_success"],self.ClientDict[client].alias,"","",room_list)
 				client.send(packet)
 			else:
 				packet = parser.assemble(utils.codes["alias_invalid"],parser.alias,"","","")
@@ -144,6 +148,7 @@ class Server():
 		formatted_message = parser.date + " " + self.ClientDict[client].alias + ": " + parser.body
 		packet = parser.assemble(utils.codes["recv_msg"],self.ClientDict[client].alias,self.ClientDict[client].chatroom,"",formatted_message)
 		room = self.ClientDict[client].chatroom
+		print "Length is" + str(len(self.ClientDict))
 		for person in self.ChatroomDict[room].clientList:
 			try:
 				person.send(packet)
