@@ -29,7 +29,7 @@ class Recieve():
                         buildQueue.put(text)
                     elif text.startswith(utils.codes["quit_client"]):
                         client.close()
-                        os._exit()
+                        os._exit(1)
                     else:
                         inputQueue.put(text)
             except:
