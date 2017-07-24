@@ -150,7 +150,8 @@ class Server():
 		if client in self.ClientDict.keys():
 			if self.ClientDict[client].chatroom:
 				room = self.ClientDict[client].chatroom
-				self.ChatroomDict[room].remove_client(client)
+				if room in self.ChatroomDict.keys():
+					self.ChatroomDict[room].remove_client(client)
 			del self.ClientDict[client]
 			print("Closed Client %s:%s" %(address[0],address[1]))
 			client.close()
@@ -182,10 +183,14 @@ class Server():
 				self.ClientDict[client].chatroom = parser.room
 				packet = parser.assemble(utils.codes["room_success"],self.ClientDict[client].alias,self.ClientDict[client].chatroom,"","")
 				client.send(packet)
+				print ("The room %s has the following clients:" %(parser.room))
+				for person in self.ChatroomDict[parser.room].clientList:
+					print self.ClientDict[person].alias
 				messagelist = self.ChatroomDict[parser.room].get_messages()
 				for message in messagelist:
 					message_packet = parser.assemble(utils.codes["recv_msg"],self.ClientDict[client].alias,self.ClientDict[client].chatroom,"",message)
-					time.sleep(0.001)
+					message_packet = parser.pad(message_packet)
+					time.sleep(0.1)
 					client.send(message_packet)
 			else:
 				packet = parser.assemble(utils.codes["room_invalid"],self.ClientDict[client].alias,parser.room,"","")
@@ -207,7 +212,7 @@ class Server():
 			self.close_client(client,self.ClientDict[client].address)
 
 	def send_to_room(self,client,parser):
-		date = datetime.datetime.now().strftime(utils.DATE_FORMAT)
+		date = str(datetime.datetime.now().strftime(utils.DATE_FORMAT))
 		formatted_message = date + " " + self.ClientDict[client].alias + ": " + parser.body
 		packet = parser.assemble(utils.codes["recv_msg"],self.ClientDict[client].alias,self.ClientDict[client].chatroom,"",formatted_message)
 		room = self.ClientDict[client].chatroom
