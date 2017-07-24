@@ -28,9 +28,9 @@ class Recieve():
                     if text.startswith(utils.codes["recv_msg"]):
                         buildQueue.put(text)
                     elif text.startswith(utils.codes["quit_client"]):
-						client.close()
-						os._exit()
-					else:
+                        client.close()
+                        os._exit()
+                    else:
                         inputQueue.put(text)
             except:
                 break
