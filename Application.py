@@ -136,7 +136,7 @@ class App(Thread):
         self.aliasInfo.pack(anchor = CENTER)
         self.spacing = Label(root, text = "", pady = 70)
         if self.flag:
-            self.spacing.config(text = "Alias is already taken", fg = "red")
+            self.spacing.config(text = "Invalid, please try again", fg = "red")
         self.spacing.pack(anchor = CENTER)
         self.login = Button(root, height=2, width=10, text = "Pick A Room", command = setRoom)
         self.login.pack(anchor = CENTER)
