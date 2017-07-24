@@ -77,6 +77,7 @@ class Server():
 						self.BlockedList.append(ip)
 						for client in self.ClientDict:
 							if (self.ClientDict[client].address[0]) == ip:
+								client.send("11")
 								self.close_client(client, self.ClientDict[client].address)
 					elif command == utils.command[4]:#unblock
 						str = ""

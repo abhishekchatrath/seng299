@@ -14,6 +14,7 @@ codes = {
 	'room_success' : '8',
 	'alias_invalid': '9',
 	'room_invalid' : '10',
+	'quit_client': '11'
 }
 
 BUFF_SIZE = 1024
