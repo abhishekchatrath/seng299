@@ -69,23 +69,25 @@ class Server():
 					elif command == utils.commands[2]:#del_room
 						self.delete_room()
 					elif command == utils.commands[3]:#block
-						str = ""
+						clientInfo = ""
 						for clientVars in self.ClientDict.values():
-							str += clientVars.__str__() + "\n"
-						print('Please type the IP of the client you wish to block and press Enter.\n%s\n' % (str))
+							clientInfo += clientVars.__str__() + "\n"
+						print('Please type the IP of the client you wish to block and press Enter.\n%s\n' % (clientInfo))
 						ip = raw_input()
 						self.BlockedList.append(ip)
-						for client in self.ClientDict:
+						for client in self.ClientDict.keys():
 							if (self.ClientDict[client].address[0]) == ip:
 								client.send("11")
 								self.close_client(client, self.ClientDict[client].address)
-					elif command == utils.command[4]:#unblock
-						str = ""
+						print('%s has been blocked.' % (ip))
+					elif command == utils.commands[4]:#unblock
+						clientInfo = ""
 						for blockedIP in self.BlockedList:
-							str = blockedIP + "\n"
-						print('Please type the IP of the client you wish to unblock and press Enter.\n%s\n' % (str))
+							clientInfo += blockedIP + "\n"
+						print('Please type the IP of the client you wish to unblock and press Enter.\n%s\n' % (clientInfo))
 						ip = raw_input()
 						self.BlockedList.remove(ip)
+						print('%s has been unblocked.' % (ip))
 				else:
 					print("Invalid command. Please try again.")
 			except Exception as e:
@@ -135,7 +137,7 @@ class Server():
 				room = self.ClientDict[client].chatroom
 				self.ChatroomDict[room].remove_client(client)
 			del self.ClientDict[client]
-		client.shutdown(socket.SHUT_RDWR)
+		#client.shutdown(socket.SHUT_RDWR)
 		client.close()
 
 	def set_alias(self, client, parser):
