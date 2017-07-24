@@ -22,19 +22,20 @@ class Recieve():
             try:
                 text = client.recv(utils.BUFF_SIZE)
                 print "Recieved packet: " + text
-                if not text:
-                    break
-                else:
-                    if text.startswith(utils.codes["recv_msg"]):
+                if text:
+                    parser = Parser()
+                    parser.breakdown(text)
+                    if parser.code == utils.codes["recv_msg"] or parser.code == utils.codes["leave_room"]:
                         buildQueue.put(text)
-                    elif text.startswith(utils.codes["quit_client"]):
+                    elif parser.code == utils.codes["quit_client"]:
                         client.close()
                         os._exit(1)
                     else:
                         inputQueue.put(text)
+                else:
+                    raise Exception
             except:
                 break
-
 
 class App(Thread):
 
@@ -69,10 +70,6 @@ class App(Thread):
         parser = Parser()
         if code == utils.codes["send_msg"]:
             date = datetime.datetime.now().strftime(utils.DATE_FORMAT)
-            print self.alias
-            print self.room
-            print date
-            print msg
             packet = parser.assemble(utils.codes["send_msg"],self.alias,self.room,date,msg)
         elif code == utils.codes["set_alias"]:
             packet = parser.assemble(utils.codes["set_alias"],msg,"","","")
@@ -139,7 +136,6 @@ class App(Thread):
         self.aliasInfo.pack(anchor = CENTER)
         self.spacing = Label(root, text = "", pady = 70)
         if self.flag:
-            print "FLAGGED"
             self.spacing.config(text = "Alias is already taken", fg = "red")
         self.spacing.pack(anchor = CENTER)
         self.login = Button(root, height=2, width=10, text = "Pick A Room", command = setRoom)
@@ -223,16 +219,17 @@ class App(Thread):
         def update_chat():
             if not buildQueue.empty():
                 MYINFO = buildQueue.get()
-                if self.in_room:
+                if MYINFO.startswith(utils.codes["leave_room"]):
+                    changingRoom()
+                elif self.in_room:
                     msg = self.breakdown_packet(MYINFO)
                     endOfBox=self.messageHistory.vbar.get()
                     self.messageHistory.insert(END, "\n" + msg)
                     if endOfBox[1]==1.0:
                         endOfBox=self.messageHistory.see("end")
             root.after(100, update_chat)
+
         root.after(100, update_chat)
-
-
 
 if __name__ == "__main__":
 

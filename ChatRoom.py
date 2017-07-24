@@ -28,9 +28,9 @@ class ChatRoom():
 	def add_message(self, client, msg):
 	 	if msg == None or client == None:
 	 		return False
-		if len(messageList) == utils.MAX_ROOM_MESSAGES:
-			messageList = messageList[1:]
-		messageList.append(msg)
+		if len(self.messageList) == utils.MAX_ROOM_MESSAGES:
+			self.messageList = self.messageList[1:]
+		self.messageList.append(msg)
 
 	def get_messages(self):
-		return messageList
+		return self.messageList

@@ -14,7 +14,8 @@ codes = {
 	'room_success' : '8',
 	'alias_invalid': '9',
 	'room_invalid' : '10',
-	'quit_client': '11'
+	'quit_client': '11',
+	'leave_room': '12'
 }
 
 BUFF_SIZE = 1024
@@ -27,7 +28,6 @@ MAX_ROOM_MESSAGES = 10
 
 commands = [
 	'create_room',
-	'rename_room',
 	'del_room',
 	'block',
 	'unblock'
