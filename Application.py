@@ -5,6 +5,7 @@ import sys
 import os
 import utils
 import Queue
+import logging
 
 from Parser import Parser
 from ScrolledText import ScrolledText
@@ -21,7 +22,7 @@ class Recieve():
         while True:
             try:
                 text = client.recv(utils.BUFF_SIZE)
-                print "Recieved packet: " + text
+                logging.info("Recieved packet: %s" % (text))
                 if text:
                     parser = Parser()
                     parser.breakdown(text)
@@ -34,7 +35,8 @@ class Recieve():
                         inputQueue.put(text)
                 else:
                     raise Exception
-            except:
+            except Exception as e:
+                logging.exception(e)
                 break
 
 class App(Thread):
@@ -49,8 +51,9 @@ class App(Thread):
         IP = 'localhost'
     try:
         client.connect((IP, 9000))
-    except:
+    except Exception as e:
         print "Could not connect to IP"
+        logging.exception(e)
         exit()
 
     def __init__(self, master):
@@ -77,7 +80,7 @@ class App(Thread):
             packet = parser.assemble(utils.codes["set_room"],self.alias,msg,"","")
         elif code == utils.codes["get_roomlist"]:
             packet = parser.assemble(utils.codes["get_roomlist"],self.alias,self.room,"","")
-        print("Sending packet %s" %(packet))
+        logging.info("Sending packet %s" %(packet))
         return packet
 
     def breakdown_packet(self,packet):
@@ -98,7 +101,7 @@ class App(Thread):
         elif parser.code == utils.codes["room_invalid"]:
             return parser.room
         else:
-            print("Invalid packet recieved")
+            logging.info("Invalid packet recieved")
             return
 
     def setAlias(self):
@@ -110,11 +113,13 @@ class App(Thread):
             if len(self.alias) > 20:
                 self.alias = self.alias[:19]
             packet = self.assemble_packet(self.alias, utils.codes["set_alias"])
-            self.client.send(packet)
+            try:
+                self.client.send(packet)
+            except Exception as e:
+                logging.exception(e)
             time.sleep(1)
             if not inputQueue.empty():
                 aliasCheck = str(inputQueue.get())
-                #This code is ruffff
                 if aliasCheck.startswith(utils.codes["alias_success"]):
                     roomList = self.breakdown_packet(aliasCheck)
                     self.clearWindow()
@@ -149,7 +154,10 @@ class App(Thread):
             if not chosenRoom:
                 chosenRoom = firstRoom
             packet = self.assemble_packet(chosenRoom, utils.codes["set_room"])
-            self.client.send(packet)
+            try:
+                self.client.send(packet)
+            except Exception as e:
+                logging.exception(e)
             time.sleep(1)
             if not inputQueue.empty():
                 roomCheck = str(inputQueue.get())
@@ -184,11 +192,17 @@ class App(Thread):
                 if len(message) > 900:
                     message = message[:899]
                 packet = self.assemble_packet(message, utils.codes["send_msg"])
-                self.client.send(packet)
+                try:
+                    self.client.send(packet)
+                except Exception as e:
+                    logging.exception(e)
 
         def changingRoom():
             packet = self.assemble_packet("", utils.codes["get_roomlist"])
-            self.client.send(packet)
+            try:
+                self.client.send(packet)
+            except Exception as e:
+                logging.exception(e)
             time.sleep(1)
             if not inputQueue.empty():
                 roomCheck = str(inputQueue.get())
@@ -232,7 +246,7 @@ class App(Thread):
         root.after(100, update_chat)
 
 if __name__ == "__main__":
-
+    logging.basicConfig(filename='Clientlog.log', format='%(asctime)s %(levelname)s: %(message)s', datefmt='%m/%d/%Y %I:%M:%S%p\t', level=logging.DEBUG)
     root = Tk()
     dir_path = os.path.dirname(os.path.realpath(__file__))
     root.iconbitmap(r''+dir_path+'/py.ico')

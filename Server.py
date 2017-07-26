@@ -4,6 +4,8 @@ import os
 import utils
 import time
 import datetime
+import logging
+
 from Parser import Parser
 from ChatRoom import ChatRoom
 from ClientVariables import ClientVariables
@@ -37,12 +39,12 @@ class Server():
 			if address[0] in self.BlockedList:
 				continue
 			if len(self.ClientDict) < utils.MAX_CLIENTS:
-				print('Connection Received: %s' % str(address))
+				logging.info('Connection Received: %s' % str(address))
 				clientVariables = ClientVariables("",address,"")
 				self.ClientDict[client] = clientVariables
 				threading.Thread(target=self.handle_connection, args=(client, address)).start()
 			else:
-				print("Max Capacity reached")
+				logging.info('Max Capacity reached')
 				client.close()
 
 	def handle_server_admin(self):
@@ -65,7 +67,7 @@ class Server():
 				else:
 					print("Invalid command. Please try again.")
 			except Exception as e:
-				print(str(e))
+				logging.exception(e)
 				self.sock.close()
 				os._exit(1)
 
@@ -79,7 +81,8 @@ class Server():
 					print("The room %s has been created" %(room_name))
 				else:
 					print("Invalid room name. Command has been aborted.")
-			except:
+			except Exception as e:
+				logging.exception(e)
 				self.sock.close()
 				os._exit(1)
 		else:
@@ -100,12 +103,13 @@ class Server():
 					packet = parser.assemble(utils.codes["leave_room"],"","","","")
 					for client in client_list:
 						client.send(packet)
+						logging.info("Sent packet: %s" %(packet))
 					del self.ChatroomDict[room_name]
 					print('The room %s has been deleted.' % (room_name))
 				else:
 					print("Invalid room name entered. Command has been aborted.")
 			except Exception as e:#for clean exit when user types CTRL+C
-				print(str(e))
+				logging.exception(e)
 				self.sock.close()
 				os._exit(1)
 		else:
@@ -129,6 +133,7 @@ class Server():
 			for client in self.ClientDict.keys():
 				if (self.ClientDict[client].address[0]) == ip:
 					client.send(packet)
+					logging.info("Sent packet: %s" %(packet))
 					self.close_client(client, self.ClientDict[client].address)
 			print('%s has been blocked.' % (ip))
 		else:
@@ -153,7 +158,7 @@ class Server():
 				if room in self.ChatroomDict.keys():
 					self.ChatroomDict[room].remove_client(client)
 			del self.ClientDict[client]
-			print("Closed Client %s:%s" %(address[0],address[1]))
+			logging.info("Closed Client %s:%s" %(address[0],address[1]))
 			client.close()
 
 	def set_alias(self, client, parser):
@@ -163,6 +168,7 @@ class Server():
 					if self.ClientDict[key].alias == parser.alias:
 						packet = parser.assemble(utils.codes["alias_invalid"],parser.alias,"","","")
 						client.send(packet)
+						logging.info("Sent packet %s" %(packet))
 						return
 				room_list = ""
 				for room in self.ChatroomDict.keys():
@@ -170,9 +176,11 @@ class Server():
 				self.ClientDict[client].alias = parser.alias
 				packet = parser.assemble(utils.codes["alias_success"],self.ClientDict[client].alias,"","",room_list)
 				client.send(packet)
+				logging.info("Sent packet %s" %(packet))
 			else:
 				packet = parser.assemble(utils.codes["alias_invalid"],parser.alias,"","","")
 				client.send(packet)
+				logging.info("Sent packet %s" %(packet))
 		except:
 			self.close_client(client,self.ClientDict[client].address)
 
@@ -183,18 +191,18 @@ class Server():
 				self.ClientDict[client].chatroom = parser.room
 				packet = parser.assemble(utils.codes["room_success"],self.ClientDict[client].alias,self.ClientDict[client].chatroom,"","")
 				client.send(packet)
-				print ("The room %s has the following clients:" %(parser.room))
-				for person in self.ChatroomDict[parser.room].clientList:
-					print self.ClientDict[person].alias
+				logging.info("Sent packet %s" %(packet))
 				messagelist = self.ChatroomDict[parser.room].get_messages()
 				for message in messagelist:
 					message_packet = parser.assemble(utils.codes["recv_msg"],self.ClientDict[client].alias,self.ClientDict[client].chatroom,"",message)
 					message_packet = parser.pad(message_packet)
 					time.sleep(0.1)
 					client.send(message_packet)
+					logging.info("Sent packet %s" %(message_packet))
 			else:
 				packet = parser.assemble(utils.codes["room_invalid"],self.ClientDict[client].alias,parser.room,"","")
 				client.send(packet)
+				logging.info("Sent packet %s" %(packet))
 		except:
 			self.close_client(client,self.ClientDict[client].address)
 
@@ -208,6 +216,7 @@ class Server():
 				room_list += room + " "
 			packet = parser.assemble(utils.codes["recv_roomlist"],self.ClientDict[client].alias,"","",room_list)
 			client.send(packet)
+			logging.info("Sent packet %s" %(packet))
 		except:
 			self.close_client(client,self.ClientDict[client].address)
 
@@ -220,6 +229,7 @@ class Server():
 		for person in self.ChatroomDict[room].clientList:
 			try:
 				person.send(packet)
+				logging.info("Sent packet %s" %(packet))
 			except:
 				continue
 
@@ -235,7 +245,7 @@ class Server():
 		elif parser.code == utils.codes["get_roomlist"] and parser.alias:
 			self.send_room_list(client,parser)
 		else:
-			print("Recieved Invalid packet")
+			logging.info("Recieved Invalid Packet %s" %(packet))
 			return
 
 	def handle_connection(self, client, address):
@@ -244,15 +254,16 @@ class Server():
 			while True:
 				packet = client.recv(self.buf_size)
 				if packet:
-					print("Recieved packet: %s" % (packet))
+					logging.info("Recieved packet: %s" % (packet))
 					self.parse_input(client,packet)
 				else:
 					raise Exception
 		except Exception as e:
-			print(str(e))
+			logging.exception(e)
 			self.close_client(client,address)
 			return False
 
 if __name__ == "__main__":
+		logging.basicConfig(filename='Serverlog.log', format='%(asctime)s %(levelname)s: %(message)s', datefmt='%m/%d/%Y %I:%M:%S%p\t', level=logging.DEBUG,filemode='w')
 		server = Server()
 		server.run()
