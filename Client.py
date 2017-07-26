@@ -14,9 +14,10 @@ from threading import *
 from socket import *
 
 
-inputQueue = Queue.Queue()
-buildQueue = Queue.Queue()
+inputQueue = Queue.Queue()  #stores command packets
+buildQueue = Queue.Queue() #stores message packets
 
+#this class runs on its own thread and listens for packets that it recieves from the server
 class Recieve():
     def __init__(self, client):
         while True:
@@ -39,7 +40,8 @@ class Recieve():
                 logging.exception(e)
                 break
 
-class App(Thread):
+#this thread creates the buttons in the GUI and listens for any change in them
+class client_GUI(Thread):
 
     alias = None
     room = None
@@ -62,6 +64,7 @@ class App(Thread):
         frame.pack()
         self.setAlias()
 
+    #creates the thread for listening to the Server
     def run(self):
         Recieve(self.client)
 
@@ -248,11 +251,14 @@ class App(Thread):
 if __name__ == "__main__":
     logging.basicConfig(filename='Clientlog.log', format='%(asctime)s %(levelname)s: %(message)s', datefmt='%m/%d/%Y %I:%M:%S%p\t', level=logging.DEBUG)
     root = Tk()
+
+    #sets the favicon of the GUI to our own custom icon
     dir_path = os.path.dirname(os.path.realpath(__file__))
     root.iconbitmap(r''+dir_path+'/py.ico')
+
     root.resizable(width=False, height=False)
     root.title('TrashTalk')
     root.geometry('{}x{}'.format(960, 540))
-    app = App(root).start()
+    GUI_thread = client_GUI(root).start() #starts the thread that runs our GUI
 
     root.mainloop()

@@ -1,3 +1,4 @@
+#breaks down and assembles packets that are sent between Clients and the Server
 import utils
 
 class Parser():

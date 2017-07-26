@@ -19,6 +19,8 @@ class Server():
 	ChatroomDict = {} #keys are chatroom name, values are Chatroom objects
 	BlockedList = [] #list of blocked IP's
 
+
+	#intializes the server socket and creates the static chatroom General
 	def __init__(self):
 		self.host = utils.socket.get('HOST', '')
 		self.host = ""
@@ -29,6 +31,7 @@ class Server():
 		self.sock.bind((self.host, self.port))
 		self.ChatroomDict['General'] = ChatRoom(utils.GEN_ROOM)
 
+	#Server listens for connections and starts a thread for each new client connection up to max 20
 	def run(self):
 		print('Starting Server.')
 		self.sock.listen(5)
@@ -47,6 +50,7 @@ class Server():
 				logging.info('Max Capacity reached')
 				client.close()
 
+	#listens for commands from the server admin
 	def handle_server_admin(self):
 		print("Please type one of the following commands and press Enter to execute it.")
 		for command in utils.commands:
@@ -151,6 +155,7 @@ class Server():
 		else:
 			print("%s is not in the blocked list." %(ip))
 
+	#closes a client socket and removes that Client from the ClientDict and ChatroomDict
 	def close_client(self,client,address):
 		if client in self.ClientDict.keys():
 			if self.ClientDict[client].chatroom:
@@ -206,7 +211,8 @@ class Server():
 		except:
 			self.close_client(client,self.ClientDict[client].address)
 
-	def send_room_list(self,client,parser): #roomlist is sent as space-separated string
+	#sends a space-separated string that contains the list of room names currently available to the client
+	def send_room_list(self,client,parser):
 		self.ClientDict[client].chatroom = None
 		if parser.room in self.ChatroomDict.keys():
 			self.ChatroomDict[parser.room].remove_client(client)
@@ -233,6 +239,7 @@ class Server():
 			except:
 				continue
 
+	#determines what the content of the packet is
 	def parse_input(self,client,packet):
 		parser = Parser()
 		parser.breakdown(packet)
@@ -248,6 +255,7 @@ class Server():
 			logging.info("Recieved Invalid Packet %s" %(packet))
 			return
 
+	#recieves packets from the client and does the appropriate action with them
 	def handle_connection(self, client, address):
 		try:
 			client.settimeout(None)

@@ -1,3 +1,4 @@
+#contains constants that are used throughout the program
 socket = {
 	'HOST': '',
 	'PORT': 9000,
