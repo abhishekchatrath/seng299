@@ -20,6 +20,9 @@ buildQueue = Queue.Queue() #stores message packets
 #this class runs on its own thread and listens for packets that it recieves from the server
 class Recieve():
     def __init__(self, client):
+        self.listen(client)
+
+    def listen(self,client):
         while True:
             try:
                 text = client.recv(utils.BUFF_SIZE)
